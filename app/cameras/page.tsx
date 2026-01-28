@@ -70,37 +70,37 @@ export default function CamerasPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-950">
+    <div className="h-screen flex flex-col bg-zinc-950 overflow-hidden">
       {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-zinc-400 hover:text-zinc-100 transition-colors">
+      <header className="shrink-0 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm px-3 sm:px-6 py-3 flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Link href="/" className="text-zinc-400 hover:text-zinc-100 transition-colors text-sm sm:text-base">
             ← Back
           </Link>
-          <h1 className="text-lg font-semibold">Camera Wall</h1>
+          <h1 className="text-base sm:text-lg font-semibold">Camera Wall</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setStreamNonce((n) => n + 1)}
-            className="text-sm px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
+            className="text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
             title="If a stream stalls after sleep/tab suspend, click to restart MJPEG streams."
           >
-            Refresh streams
+            Refresh
           </button>
           <Link
             href="/events"
-            className="text-sm px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
+            className="text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
           >
             Events →
           </Link>
         </div>
       </header>
 
-      {/* Main content: 40% stats, 60% video */}
-      <div className="flex-1 flex gap-3 p-3 overflow-hidden">
-        {/* Left: Stats panel (40%) */}
-        <div className="w-[40%] min-w-[320px] bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex flex-col">
+      {/* Main content: 40% stats, 60% video (desktop). Stacks on mobile. */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[0.4fr_0.6fr] gap-3 p-3 overflow-hidden min-h-0">
+        {/* Stats panel */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex flex-col min-h-0">
           <div className="px-4 py-3 border-b border-zinc-800">
             <h3 className="font-semibold">Camera Statistics</h3>
             <p className="text-xs text-zinc-400 mt-1">Live counters from backend</p>
@@ -169,15 +169,15 @@ export default function CamerasPage() {
           </div>
         </div>
 
-        {/* Right: Video wall (60%) */}
-        <div className="flex-1 grid grid-rows-[3.5fr_1fr] grid-cols-2 gap-2">
+        {/* Video wall */}
+        <div className="grid grid-rows-[3.5fr_1fr] grid-cols-2 gap-3 min-h-0">
           {/* Main camera (spans both columns) */}
-          <div className="col-span-2 relative bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800">
-            <div className="absolute left-3 top-3 z-10 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-sm font-medium">
+          <div className="col-span-2 relative bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 min-h-0">
+            <div className="absolute left-2 sm:left-3 top-2 sm:top-3 z-10 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-xs sm:text-sm font-medium">
               {slots.main || 'main'}
             </div>
-            <div className="absolute right-3 top-3 z-10 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-xs text-zinc-300">
-              click a small view to swap
+            <div className="absolute right-2 sm:right-3 top-2 sm:top-3 z-10 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-[10px] sm:text-xs text-zinc-300">
+              click to swap
             </div>
             {slots.main ? (
               <img
@@ -194,44 +194,44 @@ export default function CamerasPage() {
 
           {/* Thumbnail 1 */}
           <div
-            className="relative bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 cursor-pointer hover:border-zinc-600 transition-colors"
+            className="relative bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 cursor-pointer hover:border-zinc-600 transition-colors min-h-0"
             onClick={() => swapMainWith('t1')}
           >
-            <div className="absolute left-2 top-2 z-10 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs font-medium">
-              {slots.t1 || 'cam2'}
-            </div>
-            {slots.t1 ? (
-              <img
-                src={getMjpegUrl(slots.t1, 10, 75, streamNonce)}
-                alt={slots.t1}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs">
-                No camera
+              <div className="absolute left-2 top-2 z-10 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs font-medium">
+                {slots.t1 || 'cam2'}
               </div>
-            )}
+              {slots.t1 ? (
+                <img
+                  src={getMjpegUrl(slots.t1, 10, 75, streamNonce)}
+                  alt={slots.t1}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs">
+                  No camera
+                </div>
+              )}
           </div>
 
           {/* Thumbnail 2 */}
           <div
-            className="relative bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 cursor-pointer hover:border-zinc-600 transition-colors"
+            className="relative bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 cursor-pointer hover:border-zinc-600 transition-colors min-h-0"
             onClick={() => swapMainWith('t2')}
           >
-            <div className="absolute left-2 top-2 z-10 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs font-medium">
-              {slots.t2 || 'cam3'}
-            </div>
-            {slots.t2 ? (
-              <img
-                src={getMjpegUrl(slots.t2, 10, 75, streamNonce)}
-                alt={slots.t2}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs">
-                No camera
+              <div className="absolute left-2 top-2 z-10 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs font-medium">
+                {slots.t2 || 'cam3'}
               </div>
-            )}
+              {slots.t2 ? (
+                <img
+                  src={getMjpegUrl(slots.t2, 10, 75, streamNonce)}
+                  alt={slots.t2}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs">
+                  No camera
+                </div>
+              )}
           </div>
         </div>
       </div>
