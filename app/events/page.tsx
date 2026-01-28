@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { getEventStreamUrl } from '@/lib/api';
+import { API_BASE_URL, getEventStreamUrl } from '@/lib/api';
 
 interface EventMessage {
   seq?: number;
@@ -17,9 +17,21 @@ interface EventMessage {
 export default function EventsPage() {
   const [events, setEvents] = useState<EventMessage[]>([]);
   const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+  const [mixedContentWarning, setMixedContentWarning] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // If the dashboard is loaded over https (Vercel), browsers will block http API calls (mixed content).
+    try {
+      const isHttps = window.location.protocol === 'https:';
+      const isHttpApi = API_BASE_URL.startsWith('http://');
+      const isLocalApi =
+        API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1');
+      if (isHttps && isHttpApi && !isLocalApi) setMixedContentWarning(true);
+    } catch {
+      // ignore
+    }
+
     const url = getEventStreamUrl();
     const es = new EventSource(url);
 
@@ -91,6 +103,13 @@ export default function EventsPage() {
 
       {/* Event log */}
       <div className="flex-1 overflow-hidden p-6">
+        {mixedContentWarning && (
+          <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
+            Your dashboard is loaded over <b>HTTPS</b>, but the API is <b>HTTP</b> (<code>{API_BASE_URL}</code>).
+            Browsers block this (mixed content). Use a Tailscale HTTPS URL and update Vercel
+            <code className="mx-1">NEXT_PUBLIC_API_BASE_URL</code>.
+          </div>
+        )}
         <div
           ref={logRef}
           className="h-full overflow-auto bg-zinc-900 rounded-xl border border-zinc-800 p-4 font-mono text-sm"

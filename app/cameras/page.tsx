@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getCameraStatus, getMjpegUrl, type CameraStatus } from '@/lib/api';
+import { API_BASE_URL, getCameraStatus, getMjpegUrl, type CameraStatus } from '@/lib/api';
 
 export default function CamerasPage() {
   const [cameras, setCameras] = useState<CameraStatus[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const [mixedContentWarning, setMixedContentWarning] = useState(false);
+  const [streamNonce, setStreamNonce] = useState(0);
   
   // Camera slots: main, t1, t2
   const [slots, setSlots] = useState<{ main: string; t1: string; t2: string }>({
@@ -17,28 +20,42 @@ export default function CamerasPage() {
 
   // Fetch camera status on mount and poll every second
   useEffect(() => {
+    // If the dashboard is loaded over https (Vercel), browsers will block http API calls (mixed content).
+    try {
+      const isHttps = window.location.protocol === 'https:';
+      const isHttpApi = API_BASE_URL.startsWith('http://');
+      const isLocalApi =
+        API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1');
+      if (isHttps && isHttpApi && !isLocalApi) setMixedContentWarning(true);
+    } catch {
+      // ignore
+    }
+
     const fetchStatus = async () => {
       try {
         const data = await getCameraStatus();
         setCameras(data);
         
-        // Initialize slots if empty
-        if (!slots.main && data.length >= 3) {
+        // Initialize slots only once on first successful fetch
+        if (!initialized && data.length >= 3) {
           setSlots({
             main: data[0].camera_id,
             t1: data[1].camera_id,
             t2: data[2].camera_id,
           });
+          setInitialized(true);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch cameras');
+        // Browser fetch() network failures often surface as a generic "Failed to fetch".
+        const msg = err instanceof Error ? err.message : 'Failed to fetch cameras';
+        setError(msg);
       }
     };
 
     fetchStatus();
     const interval = setInterval(fetchStatus, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [initialized]);
 
   const swapMainWith = (thumbSlot: 't1' | 't2') => {
     setSlots((prev) => ({
@@ -62,12 +79,22 @@ export default function CamerasPage() {
           </Link>
           <h1 className="text-lg font-semibold">Camera Wall</h1>
         </div>
-        <Link 
-          href="/events"
-          className="text-sm px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
-        >
-          Events →
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setStreamNonce((n) => n + 1)}
+            className="text-sm px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
+            title="If a stream stalls after sleep/tab suspend, click to restart MJPEG streams."
+          >
+            Refresh streams
+          </button>
+          <Link
+            href="/events"
+            className="text-sm px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
+          >
+            Events →
+          </Link>
+        </div>
       </header>
 
       {/* Main content: 40% stats, 60% video */}
@@ -77,9 +104,23 @@ export default function CamerasPage() {
           <div className="px-4 py-3 border-b border-zinc-800">
             <h3 className="font-semibold">Camera Statistics</h3>
             <p className="text-xs text-zinc-400 mt-1">Live counters from backend</p>
+            <p className="text-[11px] text-zinc-500 mt-1">
+              API: <code className="text-zinc-400">{API_BASE_URL}</code>
+            </p>
           </div>
           
           <div className="flex-1 overflow-auto p-4 space-y-3">
+            {mixedContentWarning && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
+                Your dashboard is loaded over <b>HTTPS</b>, but the API is <b>HTTP</b>. Browsers block this (mixed
+                content).
+                <div className="text-xs text-amber-200/80 mt-2">
+                  Fix: expose the backend over HTTPS via Tailscale (recommended) and set Vercel
+                  <code className="mx-1">NEXT_PUBLIC_API_BASE_URL</code>
+                  to that <b>https://…</b> URL.
+                </div>
+              </div>
+            )}
             {error && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {error}
@@ -140,7 +181,7 @@ export default function CamerasPage() {
             </div>
             {slots.main ? (
               <img
-                src={getMjpegUrl(slots.main)}
+                src={getMjpegUrl(slots.main, 10, 75, streamNonce)}
                 alt={slots.main}
                 className="w-full h-full object-cover"
               />
@@ -161,7 +202,7 @@ export default function CamerasPage() {
             </div>
             {slots.t1 ? (
               <img
-                src={getMjpegUrl(slots.t1)}
+                src={getMjpegUrl(slots.t1, 10, 75, streamNonce)}
                 alt={slots.t1}
                 className="w-full h-full object-cover"
               />
@@ -182,7 +223,7 @@ export default function CamerasPage() {
             </div>
             {slots.t2 ? (
               <img
-                src={getMjpegUrl(slots.t2)}
+                src={getMjpegUrl(slots.t2, 10, 75, streamNonce)}
                 alt={slots.t2}
                 className="w-full h-full object-cover"
               />

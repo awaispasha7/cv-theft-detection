@@ -1,6 +1,7 @@
 // API utilities for calling the FastAPI backend
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
 export interface CameraStatus {
   camera_id: string;
@@ -22,22 +23,30 @@ export interface Event {
 }
 
 export async function getCameraStatus(): Promise<CameraStatus[]> {
-  const res = await fetch(`${API_BASE}/cameras/status`, { cache: 'no-store' });
+  const res = await fetch(`${API_BASE_URL}/cameras/status`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch camera status: ${res.statusText}`);
   return res.json();
 }
 
 export async function getRecentEvents(limit = 200): Promise<Event[]> {
-  const res = await fetch(`${API_BASE}/events/recent?limit=${limit}`, { cache: 'no-store' });
+  const res = await fetch(`${API_BASE_URL}/events/recent?limit=${limit}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch events: ${res.statusText}`);
   return res.json();
 }
 
-export function getMjpegUrl(cameraId: string, fps = 10, quality = 75): string {
-  return `${API_BASE}/cameras/${cameraId}/mjpeg?fps=${fps}&quality=${quality}&_=${Date.now()}`;
+export function getMjpegUrl(
+  cameraId: string,
+  fps = 10,
+  quality = 75,
+  nonce?: number | string,
+): string {
+  // MJPEG is a streaming response, so it generally doesn't need cache-busting.
+  // We keep an optional nonce for manual refresh if needed.
+  const n = nonce === undefined ? "" : `&_=${encodeURIComponent(String(nonce))}`;
+  return `${API_BASE_URL}/cameras/${cameraId}/mjpeg?fps=${fps}&quality=${quality}${n}`;
 }
 
 export function getEventStreamUrl(): string {
-  return `${API_BASE}/events/stream`;
+  return `${API_BASE_URL}/events/stream`;
 }
 
