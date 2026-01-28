@@ -43,7 +43,8 @@ export function getMjpegUrl(
   // MJPEG is a streaming response, so it generally doesn't need cache-busting.
   // We keep an optional nonce for manual refresh if needed.
   const n = nonce === undefined ? "" : `&_=${encodeURIComponent(String(nonce))}`;
-  return `${API_BASE_URL}/cameras/${cameraId}/mjpeg?fps=${fps}&quality=${quality}${n}`;
+  // annotate=1 renders bounding boxes/labels on the server
+  return `${API_BASE_URL}/cameras/${cameraId}/mjpeg?fps=${fps}&quality=${quality}&annotate=1${n}`;
 }
 
 export function getEventStreamUrl(): string {
